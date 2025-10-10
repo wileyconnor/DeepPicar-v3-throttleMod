@@ -40,6 +40,9 @@ cfg_cam_res = (320, 240)
 cfg_cam_fps = 30
 cfg_throttle = 50 # 50% power.
 
+max_throttle = cfg_throttle # Automatically set to throttle unless modified
+min_throttle = cfg_throttle # Automatically set to throttle unless modified
+
 frame_id = 0
 angle = 0.0
 period = 0.05 # sec (=50ms)
@@ -227,6 +230,7 @@ if __name__ == '__main__':
     parser.add_argument("-t", "--throttle", help="throttle percent. [0-100]%", type=int)
     parser.add_argument("-n", "--ncpu", help="number of cores to use.", type=int, default=1)
     parser.add_argument("-f", "--hz", help="control frequnecy", type=int)
+    parser.add_argument("-min", "--min", help="throttle minimum", type=int)
     parser.add_argument("-g", "--gamepad", help="Use gamepad", action="store_true")
     parser.add_argument("-w", "--web", help="Use webpage based input", action="store_true")
     parser.add_argument("--fpvvideo", help="Take FPV video of DNN driving", action="store_true")
@@ -237,14 +241,18 @@ if __name__ == '__main__':
         print ("DNN is on")
         use_dnn = True
     if args.throttle:
+        max_throttle = args.throttle
         cfg_throttle = args.throttle
-        print ("throttle = %d pct" % (args.throttle))
+        print ("throttle = %d pct" % (cfg_throttle))
     if args.hz:
         period = 1.0/args.hz
         print("new period: ", period)
     if args.fpvvideo:
         fpv_video = True
         print("FPV video of DNN driving is on")
+    if args.min:
+        min_throttle = args.min
+
 
     load_model()
         
@@ -262,6 +270,7 @@ if __name__ == '__main__':
     server.timeout = 0
 
     # initlaize deeppicar modules
+
     actuator.init(cfg_throttle)
     camera.init(res=cfg_cam_res, fps=cfg_cam_fps, threading=use_thread)
 
@@ -324,13 +333,24 @@ if __name__ == '__main__':
             interpreter.invoke()
             angle = interpreter.get_tensor(output_index)[0][0]
             action_limit = 10
+            print(f"Angle: {rad2deg(angle)}")
+            
             if rad2deg(angle) < -action_limit:
+                if ((max_throttle - abs(rad2deg // 2))) < min_throttle:
+                    cfg_throttle = min_throttle
+                else:
+                    cfg_throttle = (max_throttle - abs(rad2deg // 2))
                 actuator.left()
                 print ("left (CPU)")
             elif rad2deg(angle) >= -action_limit and rad2deg(angle) <= action_limit:
+                cfg_throttle = args.throttle
                 actuator.center()
                 print ("center (CPU)")
             elif rad2deg(angle) > action_limit:
+                if ((max_throttle - abs(rad2deg // 2))) < min_throttle:
+                    cfg_throttle = min_throttle
+                else:
+                    cfg_throttle = (100 - abs(rad2deg // 2))
                 actuator.right()
                 print ("right (CPU)")
         else:
@@ -371,7 +391,7 @@ if __name__ == '__main__':
             frame_id += 1
 
             # write input (angle)
-            str = "{},{},{}\n".format(int(ts*1000), frame_id, angle)
+            str = "{},{},{},{}\n".format(int(ts*1000), frame_id, angle, int(cfg_throttle))
             keyfile.write(str)
 
             if use_dnn and fpv_video:

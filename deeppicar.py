@@ -353,6 +353,7 @@ if __name__ == '__main__':
                     cfg_throttle = (max_throttle - abs(rad2deg(angle * 5) // 2))
                 actuator.right()
                 print ("right (CPU)")
+            actuator.set_speed(cfg_throttle)
         else:
             if direction < 0:
                 angle = deg2rad(direction * 30)

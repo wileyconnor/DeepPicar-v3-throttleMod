@@ -333,7 +333,7 @@ if __name__ == '__main__':
             interpreter.invoke()
             angle = interpreter.get_tensor(output_index)[0][0]
             action_limit = 10
-            print(f"Angle: {rad2deg(angle)}, possible decreased throttle: {rad2deg(angle * 5) // 2} ")
+            print(f"Angle: {rad2deg(angle)}, possible decreased throttle: {max_throttle - rad2deg(angle * 5) // 2} ")
 
             if rad2deg(angle) < -action_limit:
                 if ((max_throttle - abs(rad2deg(angle * 5) // 2))) < min_throttle:
@@ -350,7 +350,7 @@ if __name__ == '__main__':
                 if ((max_throttle - abs(rad2deg(angle * 5) // 2))) < min_throttle:
                     cfg_throttle = min_throttle
                 else:
-                    cfg_throttle = (100 - abs(rad2deg(angle * 5) // 2))
+                    cfg_throttle = (max_throttle - abs(rad2deg(angle * 5) // 2))
                 actuator.right()
                 print ("right (CPU)")
         else:

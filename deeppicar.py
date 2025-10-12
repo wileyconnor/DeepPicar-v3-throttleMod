@@ -333,8 +333,9 @@ if __name__ == '__main__':
             interpreter.invoke()
             angle = interpreter.get_tensor(output_index)[0][0]
             action_limit = 10
-            print(f"Angle: {rad2deg(angle)}, possible decreased throttle: {max_throttle - rad2deg(angle * 5) // 2} ")
-            throttleSpeed = (max_throttle - (rad2deg(angle)/4))
+            throttleSpeed = (max_throttle - abs(rad2deg(angle)/4))
+            print(f"Angle: {rad2deg(angle)}, possible decreased throttle: {throttleSpeed} ")
+            
             if rad2deg(angle) < -action_limit:
                 if throttleSpeed < min_throttle:
                     cfg_throttle = min_throttle
